@@ -46,7 +46,7 @@ fi
 CACHE="$DATA_DIR/latest-source.jpg"
 STATE="$DATA_DIR/last-render-settings.txt"
 # Re-render if user settings or the source endpoint change, even when the image bytes are identical.
-printf '%s\\n' "$SATELLITE" "$WIDTH" "$HEIGHT" "$PADDING" "$URL" > "$TMP/settings.txt"
+printf '%s\n' "$SATELLITE" "$WIDTH" "$HEIGHT" "$PADDING" "$URL" > "$TMP/settings.txt"
 if [[ -f "$CACHE" && -f "$STATE" ]] && cmp -s "$TMP/raw.jpg" "$CACHE" && cmp -s "$TMP/settings.txt" "$STATE"; then
   echo 'NOAA image unchanged; skipping.'
   exit 0
