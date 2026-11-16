@@ -15,8 +15,8 @@ Turn your Mac into a live view of Earth. This small open-source tool downloads N
 
 1. Download this repository as a ZIP and extract it, or clone it:
    ```bash
-   git clone https://github.com/NolanHasting/goes-live-wallpaper.git
-   cd goes-live-wallpaper
+   git clone https://github.com/NolanHasting/noaa-goes-live-wallpaper.git
+   cd noaa-goes-live-wallpaper
    ```
 2. Run:
    ```bash
@@ -55,7 +55,23 @@ The entire satellite image is fitted inside the output resolution, centered on b
 
 **Scheduling:** The installer creates `~/Library/LaunchAgents/com.goeslive.wallpaper.plist`, configured with `StartInterval=300`. It runs when the Mac is awake and the user is logged in; it does not run while sleeping. Restart the agent after configuration changes only if you change the schedule itself. To update an image after editing config: `./scripts/update.sh`.
 
-**Unchanged source:** The updater compares the downloaded image with the last successful download. If NOAA's image is unchanged, it skips processing. Failed downloads do not replace the last wallpaper.
+**Unchanged source:** The updater compares the downloaded image and relevant rendering settings with the last successful wallpaper update. If neither changes, it skips processing. Changes to the satellite, dimensions, or padding take effect on the next refresh even when the downloaded image is unchanged. Failed downloads do not replace the last wallpaper.
+
+## Check that it is running
+
+After installing, allow a minute for the first download, then check that your wallpaper has changed. You can also trigger an immediate update:
+
+```bash
+./scripts/update.sh
+```
+
+To check the 5-minute LaunchAgent:
+
+```bash
+launchctl print "gui/$(id -u)/com.goeslive.wallpaper"
+```
+
+Look for output images in `~/Library/Application Support/GOES Live Wallpaper/`, and the screensaver image in `~/Pictures/GOES Live Wallpaper/`. The screensaver folder is not automatically selected by the installer.
 
 ## Logs and troubleshooting
 
@@ -67,7 +83,9 @@ tail -n 50 ~/Library/Logs/goes-live-wallpaper.error.log
 - If you see `Missing virtual environment`, rerun `./install.sh`.
 - If macOS refuses to set the wallpaper, allow automation access for the invoking app in **System Settings → Privacy & Security → Automation** and rerun `./scripts/update.sh`.
 - A stable image path is supplied for screensavers, but macOS may not notice an in-place replacement. Test your particular macOS screensaver.
-- If NOAA is offline, previously generated files remain available.
+- If NOAA is offline, previously generated files remain available. Failed downloads are logged and retried on the next scheduled run.
+- If the image stays unchanged, NOAA might not have published a new frame yet. The updater intentionally skips identical downloads.
+- If you edit the configuration, run `./scripts/update.sh` to apply it immediately. Wallpaper permissions must be granted for a successful change.
 - For 5K, ultrawide or laptop displays, adjust `WIDTH`/`HEIGHT`.
 - The script targets a single configured resolution, so it does **not** tailor each monitor independently on mixed-resolution multi-monitor setups.
 
@@ -94,4 +112,10 @@ bash -n install.sh uninstall.sh scripts/update.sh
 
 Source: [NOAA STAR GOES imagery](https://www.star.nesdis.noaa.gov/GOES/index.php). GOES satellite and GeoColor imagery courtesy of NOAA/NESDIS/STAR and the Cooperative Institute for Research in the Atmosphere (CIRA). Respect the source provider's availability and attribution guidance. This repository distributes **code only**, not bundled NOAA imagery.
 
-MIT licensed. Contributions are welcome.
+## Contributing
+
+Bug reports, compatibility notes, and pull requests are welcome. If reporting an issue, include your macOS version, monitor resolution, relevant log output (remove personal paths), and whether you installed from a ZIP or clone.
+
+## License
+
+The project code is released under the [MIT License](LICENSE). Satellite imagery remains subject to its provider's terms and attribution guidance.
