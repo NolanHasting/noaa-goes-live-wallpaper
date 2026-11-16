@@ -44,7 +44,10 @@ if ! curl --fail --location --silent --show-error --retry 2 --connect-timeout 15
 fi
 # Image validation is performed by Pillow before replacing any output.
 CACHE="$DATA_DIR/latest-source.jpg"
-if [[ -f "$CACHE" ]] && cmp -s "$TMP/raw.jpg" "$CACHE"; then
+STATE="$DATA_DIR/last-render-settings.txt"
+# Re-render if user settings or the source endpoint change, even when the image bytes are identical.
+printf '%s\\n' "$SATELLITE" "$WIDTH" "$HEIGHT" "$PADDING" "$URL" > "$TMP/settings.txt"
+if [[ -f "$CACHE" && -f "$STATE" ]] && cmp -s "$TMP/raw.jpg" "$CACHE" && cmp -s "$TMP/settings.txt" "$STATE"; then
   echo 'NOAA image unchanged; skipping.'
   exit 0
 fi
@@ -56,6 +59,7 @@ cp "$TMP/rendered.jpg" "$SCREENSAVER_DIR/.next-$$.jpg"
 mv -f "$SCREENSAVER_DIR/.next-$$.jpg" "$SCREENSAVER_DIR/goes-current.jpg"
 cp "$TMP/raw.jpg" "$TMP/latest-source.jpg"
 mv -f "$TMP/latest-source.jpg" "$CACHE"
+APPLIED=1
 if [[ "${GOES_SKIP_WALLPAPER:-0}" != "1" ]]; then
   if ! osascript - "$NEW" <<'APPLE'
 on run argv
@@ -67,8 +71,15 @@ end run
 APPLE
   then
     echo 'Image updated, but macOS could not set the wallpaper. Check Automation permissions.' >&2
+    APPLIED=0
   fi
 fi
 # Retain newest N historical wallpapers, leave source cache and current screensaver intact.
 find "$DATA_DIR" -maxdepth 1 -type f -name 'goes-*.jpg' -print | sort -r | tail -n +$((KEEP + 1)) | while IFS= read -r old; do rm -f "$old"; done
-echo "Updated $SATELLITE wallpaper: $NEW"
+if (( APPLIED )); then
+  mv -f "$TMP/settings.txt" "$STATE"
+  echo "Updated $SATELLITE wallpaper: $NEW"
+else
+  # Do not mark this image/settings combination complete; retry wallpaper authorization on the next run.
+  exit 1
+fi
