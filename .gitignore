@@ -1,0 +1,17 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+
+# Generated satellite images
+*.jpg
+*.jpeg
+*.png
+
+# Allow screenshots for documentation
+!screenshots/
+!screenshots/*.jpg
+!screenshots/*.jpeg
+!screenshots/*.png
